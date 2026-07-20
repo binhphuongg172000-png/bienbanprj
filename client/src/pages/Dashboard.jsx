@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_BASE_URL from '../apiConfig.js';
 
 const Dashboard = ({ user }) => {
   const [data, setData] = useState(null);
@@ -8,7 +9,7 @@ const Dashboard = ({ user }) => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/dashboard/stats', {
+        const res = await axios.get(`${API_BASE_URL}/api/dashboard/stats`, {
           headers: {
             'x-user-role': user?.role || 'user',
             'x-user-id': user?.id || ''

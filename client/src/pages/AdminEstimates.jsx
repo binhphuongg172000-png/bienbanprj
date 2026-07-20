@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import html2pdf from 'html2pdf.js';
+import API_BASE_URL from '../apiConfig.js';
 
 const AdminEstimates = ({ user }) => {
   const [estimates, setEstimates] = useState([]);
@@ -11,7 +12,7 @@ const AdminEstimates = ({ user }) => {
   
   const [selectedEstimate, setSelectedEstimate] = useState(null);
 
-  const API_URL = 'http://localhost:5000/api/estimates';
+  const API_URL = `${API_BASE_URL}/api/estimates`;
 
   const showToast = (type, message) => {
     if (type === 'success') toast.success(message);
@@ -46,7 +47,7 @@ const AdminEstimates = ({ user }) => {
       return next;
     });
     try {
-      const res = await axios.put(`http://localhost:5000/api/estimates/${id}/lock`, 
+      const res = await axios.put(`${API_BASE_URL}/api/estimates/${id}/lock`, 
         { is_locked: !currentLockStatus },
         { headers: { 'x-user-role': user?.role } }
       );
@@ -69,7 +70,7 @@ const AdminEstimates = ({ user }) => {
   const handleDelete = async (id) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa bản dự trù này? Thao tác không thể hoàn tác!')) return;
     try {
-      const res = await axios.delete(`http://localhost:5000/api/estimates/${id}`, {
+      const res = await axios.delete(`${API_BASE_URL}/api/estimates/${id}`, {
         headers: { 'x-user-role': user?.role }
       });
       if (res.data.success) {

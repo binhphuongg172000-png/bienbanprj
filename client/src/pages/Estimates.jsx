@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { formatDate, todayISO } from '../utils.js';
 import html2pdf from 'html2pdf.js';
+import API_BASE_URL from '../apiConfig.js';
 
 const Estimates = ({ user, onNavigate }) => {
   const [schools, setSchools] = useState([]);
@@ -35,7 +36,7 @@ const Estimates = ({ user, onNavigate }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const schoolsRes = await axios.get('http://localhost:5000/api/schools', {
+      const schoolsRes = await axios.get(`${API_BASE_URL}/api/schools`, {
         headers: {
           'x-user-role': user?.role || '',
           'x-user-id': user?.id || ''
@@ -43,10 +44,10 @@ const Estimates = ({ user, onNavigate }) => {
       });
       if (schoolsRes.data?.success) setSchools(schoolsRes.data.data);
 
-      const eqRes = await axios.get('http://localhost:5000/api/equipments');
+      const eqRes = await axios.get(`${API_BASE_URL}/api/equipments`);
       if (eqRes.data?.success) setEquipments(eqRes.data.data);
 
-      const salesRes = await axios.get('http://localhost:5000/api/sales');
+      const salesRes = await axios.get(`${API_BASE_URL}/api/sales`);
       if (salesRes.data?.success) setSalesList(salesRes.data.data);
 
     } catch (err) {
@@ -86,7 +87,7 @@ const Estimates = ({ user, onNavigate }) => {
     setSelectedItems([]);
 
     try {
-      const res = await axios.get(`http://localhost:5000/api/estimates?school_id=${school.id}`);
+      const res = await axios.get(`${API_BASE_URL}/api/estimates?school_id=${school.id}`);
       if (res.data?.success && res.data.data.length > 0) {
         const latest = res.data.data[0];
         setExistingEstimate(latest);
@@ -192,7 +193,7 @@ const Estimates = ({ user, onNavigate }) => {
     };
 
     try {
-      const response = await axios.post('http://localhost:5000/api/estimates', payload);
+      const response = await axios.post(`${API_BASE_URL}/api/estimates`, payload);
       if (response.data?.success) {
         showToast('success', 'Lưu bản dự trù vào Database thành công!');
         fetchData();

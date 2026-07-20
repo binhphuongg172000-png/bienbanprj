@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
+import API_BASE_URL from '../apiConfig.js';
 
 const Schools = ({ user }) => {
   const [schools, setSchools] = useState([]);
@@ -33,7 +34,7 @@ const Schools = ({ user }) => {
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef(null);
 
-  const API_URL = 'http://localhost:5000/api/schools';
+  const API_URL = `${API_BASE_URL}/api/schools`;
 
   const mockSales = [
     { id: '11111111-1111-1111-1111-111111111111', name: 'Nguyễn Văn B (Sales)' },
@@ -57,7 +58,7 @@ const Schools = ({ user }) => {
     try {
       const [schoolsRes, salesRes] = await Promise.all([
         axios.get(API_URL),
-        axios.get('http://localhost:5000/api/sales')
+        axios.get(`${API_BASE_URL}/api/sales`)
       ]);
 
       if (schoolsRes.data?.success) {

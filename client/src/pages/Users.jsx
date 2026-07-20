@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import API_BASE_URL from '../apiConfig.js';
 
 const Users = ({ user }) => {
   const [users, setUsers] = useState([]);
@@ -10,8 +11,8 @@ const Users = ({ user }) => {
   const [editingId, setEditingId] = useState(null);
   
 
-  const API_URL = 'http://localhost:5000/api/users';
-  const SALES_API_URL = 'http://localhost:5000/api/sales';
+  const API_URL = `${API_BASE_URL}/api/users`;
+  const SALES_API_URL = `${API_BASE_URL}/api/sales`;
 
   const showToast = (type, message) => {
     if (type === 'success') toast.success(message);

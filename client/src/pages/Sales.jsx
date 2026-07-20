@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import API_BASE_URL from '../apiConfig.js';
 
 const Sales = ({ user }) => {
   const [salesList, setSalesList] = useState([]);
@@ -21,7 +22,7 @@ const Sales = ({ user }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
 
-  const API_URL = 'http://localhost:5000/api/sales';
+  const API_URL = `${API_BASE_URL}/api/sales`;
 
   const fallbackSales = [
     { id: 'sa111111-1111-1111-1111-111111111111', name: 'Nguyễn Văn B (Sales)', email: 'sales.b@erems.com', status: 'active' },

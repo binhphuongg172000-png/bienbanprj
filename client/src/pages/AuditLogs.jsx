@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import API_BASE_URL from '../apiConfig.js';
 
 // Hàm dịch các key tiếng Anh sang tiếng Việt dễ hiểu
 const translateKey = (key) => {
@@ -91,7 +92,7 @@ const AuditLogs = () => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/audit');
+      const res = await axios.get(`${API_BASE_URL}/api/audit`);
       if (res.data.success) {
         setLogs(res.data.data || []);
         setMappings(res.data.mappings || {});
@@ -114,7 +115,7 @@ const AuditLogs = () => {
     if (!window.confirm('Bạn có chắc chắn muốn khôi phục lại dữ liệu ở thời điểm này?')) return;
 
     try {
-      const res = await axios.post(`http://localhost:5000/api/audit/revert/${logId}`);
+      const res = await axios.post(`${API_BASE_URL}/api/audit/revert/${logId}`);
       if (res.data?.success) {
         showToast('success', 'Đã khôi phục dữ liệu thành công!');
         fetchLogs(); // Reload logs
@@ -126,7 +127,7 @@ const AuditLogs = () => {
   };
   
   const handleDownloadBackup = () => {
-    window.location.href = 'http://localhost:5000/api/audit/backup';
+    window.location.href = `${API_BASE_URL}/api/audit/backup`;
   };
 
   // Lọc chỉ lấy những trường dữ liệu có sự thay đổi (dành cho thao tác UPDATE)

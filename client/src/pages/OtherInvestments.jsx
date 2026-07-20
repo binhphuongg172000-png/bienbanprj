@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
+import API_BASE_URL from '../apiConfig.js';
 
 const OtherInvestments = ({ user }) => {
   const [items, setItems] = useState([]);
@@ -27,7 +28,7 @@ const OtherInvestments = ({ user }) => {
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef(null);
 
-  const API_URL = 'http://localhost:5000/api/equipments';
+  const API_URL = `${API_BASE_URL}/api/equipments`;
 
   const showToast = (type, message) => {
     if (type === 'success') toast.success(message);

@@ -7,6 +7,7 @@ import Estimates from './pages/Estimates';
 import Schools from './pages/Schools';
 import Sales from './pages/Sales';
 import Equipments from './pages/Equipments';
+import OtherInvestments from './pages/OtherInvestments';
 import AdminEstimates from './pages/AdminEstimates';
 import AuditLogs from './pages/AuditLogs';
 import Users from './pages/Users';
@@ -73,6 +74,8 @@ function App() {
         return <Sales user={user} />;
       case 'equipments':
         return <Equipments user={user} />;
+      case 'other-investments':
+        return <OtherInvestments user={user} />;
       case 'estimates':
         return <Estimates key={`estimates-${resetKey}`} user={user} onNavigate={handleTabChange} />;
       case 'admin-estimates':

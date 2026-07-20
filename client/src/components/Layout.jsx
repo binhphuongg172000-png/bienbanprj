@@ -6,6 +6,7 @@ const Layout = ({ children, activeTab, setActiveTab, user, onLogout }) => {
     { id: 'schools', label: 'Quản lý Trường học', icon: '🏫' },
     { id: 'sales', label: 'Quản lý Sales', icon: '💼' },
     { id: 'equipments', label: 'Danh mục Thiết bị', icon: '💻' },
+    { id: 'other-investments', label: 'Danh mục Đầu tư khác', icon: '💰' },
     { id: 'admin-estimates', label: 'Biên bản dự trù', icon: '📁' },
     { id: 'handovers', label: 'Biên bản Bàn giao', icon: '🤝' },
     { id: 'users', label: 'Quản lý Người dùng', icon: '👥' },

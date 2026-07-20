@@ -307,6 +307,7 @@ const Estimates = ({ user, onNavigate }) => {
                         className="px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer transition-colors flex flex-col"
                       >
                         <span className="font-semibold">{school.name}</span>
+                        {school.sales_name && <span className="text-[10px] text-purple-400 mt-0.5">💼 Sales: {school.sales_name}</span>}
                         {school.address && <span className="text-[10px] text-slate-500 mt-0.5">📍 {school.address}</span>}
                       </div>
                     ))}

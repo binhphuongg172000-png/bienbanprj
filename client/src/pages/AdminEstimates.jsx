@@ -195,6 +195,9 @@ const AdminEstimates = ({ user }) => {
                     className="px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer transition-colors"
                   >
                     <div className="font-semibold">{school.name}</div>
+                    {school.sales_name && (
+                      <span className="text-[10px] text-purple-400 mt-1 block">💼 Sales: {school.sales_name}</span>
+                    )}
                     {school.address && (
                       <span className="text-[10px] text-slate-500 mt-1 block">📍 {school.address}</span>
                     )}

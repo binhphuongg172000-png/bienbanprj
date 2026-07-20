@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS equipments (
     specifications TEXT,
     accessories TEXT,
     unit_price DECIMAL(12,2) NOT NULL,
+    category VARCHAR(50) DEFAULT 'thiết bị',
+    unit VARCHAR(50) DEFAULT 'cái',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -64,7 +66,7 @@ CREATE TABLE IF NOT EXISTS estimate_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     estimate_id UUID NOT NULL REFERENCES estimates(id) ON DELETE CASCADE,
     equipment_id UUID NOT NULL REFERENCES equipments(id) ON DELETE CASCADE,
-    quantity INTEGER NOT NULL DEFAULT 1,
+    quantity DECIMAL(12,2) NOT NULL DEFAULT 1,
     unit_price DECIMAL(12,2) NOT NULL
 );
 

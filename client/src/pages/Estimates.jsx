@@ -30,6 +30,8 @@ const Estimates = ({ user, onNavigate }) => {
 
   const [existingEstimate, setExistingEstimate] = useState(null);
   const [editingEstimateId, setEditingEstimateId] = useState(null);
+  const [searchQueries, setSearchQueries] = useState({});
+  const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
 
   const schoolRef = useRef(null);
 
@@ -145,6 +147,37 @@ const Estimates = ({ user, onNavigate }) => {
   const remainingBudget = usableBudget - totalCost;
   const isBudgetNegative = remainingBudget < 0;
 
+  const checkIsUnchanged = () => {
+    if (!existingEstimate) return false;
+
+    const newStudentsMatch = (parseInt(newStudentsCount) || 0) === (existingEstimate.new_students_count || 0);
+    const oldStudentsMatch = (parseInt(oldStudentsCount) || 0) === (existingEstimate.old_students_count || 0);
+    const classroomsMatch = (parseInt(classroomsCount) || 0) === (existingEstimate.classrooms_count || 0);
+    const addressMatch = (address || '').trim() === (existingEstimate.address || selectedSchoolObj?.address || '').trim();
+
+    if (!newStudentsMatch || !oldStudentsMatch || !classroomsMatch || !addressMatch) {
+      return false;
+    }
+
+    const currentItems = selectedItems.filter(i => i.equipmentId);
+    const prevItems = existingEstimate.items || [];
+
+    if (currentItems.length !== prevItems.length) {
+      return false;
+    }
+
+    for (const item of currentItems) {
+      const matchedItem = prevItems.find(ei => ei.equipmentId === item.equipmentId);
+      if (!matchedItem) return false;
+      if (parseFloat(matchedItem.quantity) !== parseFloat(item.quantity)) return false;
+      if (parseFloat(matchedItem.unitPrice) !== parseFloat(item.unitPrice)) return false;
+    }
+
+    return true;
+  };
+
+  const isUnchanged = checkIsUnchanged();
+
   const handleSaveEstimate = async (e) => {
     e.preventDefault();
     if (!selectedSchoolObj || selectedItems.length === 0 || selectedItems.some(i => !i.equipmentId)) {
@@ -159,18 +192,6 @@ const Estimates = ({ user, onNavigate }) => {
 
     // Kiểm tra xem có thay đổi so với bản dự trù gần nhất không
     if (existingEstimate) {
-      const isUnchanged = (
-        parseInt(newStudentsCount) === (existingEstimate.new_students_count || 0) &&
-        parseInt(oldStudentsCount) === (existingEstimate.old_students_count || 0) &&
-        parseInt(classroomsCount) === (existingEstimate.classrooms_count || 0) &&
-        address === (existingEstimate.address || selectedSchoolObj.address || '') &&
-        selectedItems.length === (existingEstimate.items?.length || 0) &&
-        selectedItems.every(item => {
-          const matchedItem = existingEstimate.items?.find(ei => ei.equipmentId === item.equipmentId);
-          return matchedItem && parseInt(matchedItem.quantity) === parseInt(item.quantity);
-        })
-      );
-
       if (isUnchanged) {
         showToast('error', 'Không có thông tin nào thay đổi so với bản dự trù trước đó.');
         return;
@@ -187,8 +208,8 @@ const Estimates = ({ user, onNavigate }) => {
       address: address,
       items: selectedItems.map(item => ({
         equipmentId: item.equipmentId,
-        quantity: parseInt(item.quantity),
-        unitPrice: parseFloat(item.unitPrice)
+        quantity: parseFloat(item.quantity) || 0,
+        unitPrice: parseFloat(item.unitPrice) || 0
       }))
     };
 
@@ -237,8 +258,9 @@ const Estimates = ({ user, onNavigate }) => {
         return {
           equipmentName: eq ? eq.name : 'Thiết bị chưa xác định',
           equipmentSpecifications: eq ? eq.specifications : '',
-          quantity: parseInt(item.quantity),
-          unitPrice: parseFloat(item.unitPrice)
+          quantity: parseFloat(item.quantity) || 0,
+          unitPrice: parseFloat(item.unitPrice) || 0,
+          unit: eq ? (eq.unit || 'cái') : 'cái'
         };
       })
     };
@@ -385,16 +407,80 @@ const Estimates = ({ user, onNavigate }) => {
             )}
 
             {selectedSchoolObj && (
-              <div className="bg-slate-950/20 border border-slate-800 p-4 rounded-xl space-y-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-                  <div>
-                    <span className="block text-[10px] font-semibold text-slate-455 uppercase tracking-wider">Ngân sách sử dụng thực tế (Quy đổi):</span>
-                    <span className="text-[10px] text-slate-500 block italic">105 học sinh mới được cấp 100.000.000 đ ngân sách</span>
+              <div className="bg-slate-900 border border-slate-800/80 rounded-xl p-5 space-y-4 shadow-md">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2">📊 PHÂN TÍCH HẠN MỨC NGÂN SÁCH</h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Cột 1: Ngân sách được cấp */}
+                  <div className="bg-slate-950/40 border border-slate-850 p-3 rounded-lg flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-semibold uppercase block">Ngân sách được cấp</span>
+                      <span className="text-[9px] text-slate-650 block mt-0.5">({newStudentsCount || 0} HS mới / 105 * 100M)</span>
+                    </div>
+                    <span className="text-sm font-bold text-blue-400 mt-2 block">
+                      {usableBudget.toLocaleString('vi-VN')} đ
+                    </span>
                   </div>
-                  <span className="text-xl font-black text-blue-405 block tracking-tight">
-                    {usableBudget.toLocaleString('vi-VN')} đ
-                  </span>
+
+                  {/* Cột 2: Dự toán đề xuất */}
+                  <div className="bg-slate-950/40 border border-slate-850 p-3 rounded-lg flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-semibold uppercase block">Dự toán đề xuất</span>
+                      <span className="text-[9px] text-slate-650 block mt-0.5">({selectedItems.filter(i => i.equipmentId).length} hạng mục)</span>
+                    </div>
+                    <span className="text-sm font-bold text-purple-400 mt-2 block">
+                      {totalCost.toLocaleString('vi-VN')} đ
+                    </span>
+                  </div>
+
+                  {/* Cột 3: Ngân sách còn lại */}
+                  <div className={`bg-slate-950/40 border p-3 rounded-lg flex flex-col justify-between ${
+                    remainingBudget >= 0 ? 'border-emerald-950/50' : 'border-rose-950/50'
+                  }`}>
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-semibold uppercase block">Ngân sách còn lại</span>
+                      <span className={`text-[10px] font-bold block mt-0.5 ${
+                        remainingBudget >= 0 ? 'text-emerald-500' : 'text-rose-500 animate-pulse'
+                      }`}>
+                        {remainingBudget >= 0 ? '✅ Trong hạn mức' : '🚨 Vượt hạn mức!'}
+                      </span>
+                    </div>
+                    <span className={`text-sm font-extrabold mt-2 block ${
+                      remainingBudget >= 0 ? 'text-emerald-400' : 'text-rose-450'
+                    }`}>
+                      {remainingBudget.toLocaleString('vi-VN')} đ
+                    </span>
+                  </div>
                 </div>
+
+                {/* Progress bar */}
+                {usableBudget > 0 && (
+                  <div className="space-y-1 pt-1">
+                    {(() => {
+                      const percentUsed = (totalCost / usableBudget) * 100;
+                      return (
+                        <>
+                          <div className="flex justify-between text-[10px]">
+                            <span className="text-slate-500">Tỷ lệ sử dụng ngân sách:</span>
+                            <span className={`font-bold ${percentUsed > 100 ? 'text-rose-500' : 'text-purple-400'}`}>
+                              {percentUsed.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-850">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-300 ${
+                                percentUsed > 100 
+                                  ? 'bg-gradient-to-r from-rose-600 to-red-500' 
+                                  : 'bg-gradient-to-r from-purple-600 to-blue-500'
+                              }`}
+                              style={{ width: `${Math.min(percentUsed, 100)}%` }}
+                            />
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             )}
 
@@ -407,32 +493,132 @@ const Estimates = ({ user, onNavigate }) => {
                   </button>
                 </div>
                 {selectedItems.map((item, idx) => (
-                  <div key={idx} className="flex gap-3 bg-slate-950/45 p-4 border border-slate-800/60 rounded-xl items-center">
-                    <select value={item.equipmentId} onChange={(e) => handleUpdateItemRow(idx, 'equipmentId', e.target.value)} className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-xs text-white">
-                      <option value="">-- Chọn thiết bị --</option>
-                      {equipments.map(eq => <option key={eq.id} value={eq.id}>{eq.name}</option>)}
-                    </select>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <input 
-                        type="number" 
-                        value={item.unitPrice || ''} 
-                        onChange={(e) => handleUpdateItemRow(idx, 'unitPrice', parseFloat(e.target.value) || 0)} 
-                        className="w-28 bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-xs text-white text-right" 
-                        placeholder="Đơn giá"
+                  <div key={idx} className="flex flex-col sm:flex-row gap-3 bg-slate-950/45 p-4 border border-slate-800/60 rounded-xl items-start sm:items-center">
+                    
+                    {/* Ô Tìm kiếm Thiết bị */}
+                    <div className="flex-1 w-full relative">
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm và chọn thiết bị..."
+                        value={
+                          searchQueries[idx] !== undefined
+                            ? searchQueries[idx]
+                            : equipments.find(e => e.id === item.equipmentId)?.name || ''
+                        }
+                        onChange={(e) => {
+                          setSearchQueries({ ...searchQueries, [idx]: e.target.value });
+                          setActiveDropdownIndex(idx);
+                        }}
+                        onFocus={() => {
+                          setActiveDropdownIndex(idx);
+                          const currentName = equipments.find(e => e.id === item.equipmentId)?.name || '';
+                          setSearchQueries({ ...searchQueries, [idx]: currentName });
+                        }}
+                        onBlur={() => {
+                          // Đóng dropdown trễ để bắt sự kiện click
+                          setTimeout(() => {
+                            setActiveDropdownIndex(null);
+                            setSearchQueries(prev => {
+                              const updated = { ...prev };
+                              delete updated[idx];
+                              return updated;
+                            });
+                          }, 250);
+                        }}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-purple-500/80 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-655 focus:outline-none transition-colors"
                       />
-                      <span className="text-[10px] text-slate-500">đ</span>
+                      
+                      {activeDropdownIndex === idx && (
+                        <div className="absolute z-30 w-full mt-1.5 bg-slate-950 border border-slate-800 rounded-xl shadow-xl max-h-48 overflow-y-auto divide-y divide-slate-900">
+                          {(() => {
+                            const queryText = searchQueries[idx] || '';
+                            const sortedEquipments = [...equipments].sort((a, b) => {
+                              const catA = (a.category || '').toLowerCase() === 'đầu tư khác' ? 1 : 0;
+                              const catB = (b.category || '').toLowerCase() === 'đầu tư khác' ? 1 : 0;
+                              return catA - catB;
+                            });
+                            
+                            const filtered = sortedEquipments.filter(eq => 
+                              eq.name?.toLowerCase().includes(queryText.toLowerCase()) ||
+                              eq.category?.toLowerCase().includes(queryText.toLowerCase())
+                            );
+
+                            if (filtered.length === 0) {
+                              return <div className="p-3 text-xs text-slate-500 text-center italic">Không tìm thấy thiết bị...</div>;
+                            }
+
+                            return filtered.map(eq => {
+                              const isOther = (eq.category || '').toLowerCase() === 'đầu tư khác';
+                              return (
+                                <div
+                                  key={eq.id}
+                                  onClick={() => {
+                                    handleUpdateItemRow(idx, 'equipmentId', eq.id);
+                                    setActiveDropdownIndex(null);
+                                    setSearchQueries(prev => {
+                                      const updated = { ...prev };
+                                      delete updated[idx];
+                                      return updated;
+                                    });
+                                  }}
+                                  className="px-4 py-2.5 text-xs hover:bg-slate-900 hover:text-white cursor-pointer transition-colors flex justify-between items-center gap-2 text-slate-300"
+                                >
+                                  <div>
+                                    <span className="font-semibold block">{eq.name}</span>
+                                    {eq.specifications && (
+                                      <span className="text-[10px] text-slate-500 block truncate max-w-[250px]">{eq.specifications}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
+                                      isOther 
+                                        ? 'bg-amber-600/20 text-amber-400 border border-amber-500/20' 
+                                        : 'bg-blue-600/20 text-blue-400 border border-blue-500/20'
+                                    }`}>
+                                      {isOther ? 'Đầu tư khác' : 'Thiết bị'}
+                                    </span>
+                                    <span className="text-[9px] text-slate-500 border border-slate-800 px-1 py-0.5 rounded">{eq.unit || 'cái'}</span>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <input 
-                        type="number" 
-                        value={item.quantity} 
-                        onChange={(e) => handleUpdateItemRow(idx, 'quantity', parseInt(e.target.value) || 0)} 
-                        className="w-16 bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-xs text-white text-center" 
-                        placeholder="Số lượng"
-                      />
-                      <span className="text-[10px] text-slate-500">cái</span>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 justify-between sm:justify-start">
+                      {/* Đơn giá */}
+                      <div className="flex items-center gap-1.5">
+                        <input 
+                          type="number" 
+                          value={item.unitPrice || ''} 
+                          onChange={(e) => handleUpdateItemRow(idx, 'unitPrice', parseFloat(e.target.value) || 0)} 
+                          className="w-24 bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-xs text-white text-right" 
+                          placeholder="Đơn giá"
+                        />
+                        <span className="text-[10px] text-slate-500">đ</span>
+                      </div>
+
+                      {/* Số lượng */}
+                      <div className="flex items-center gap-1.5">
+                        <input 
+                          type="number" 
+                          step="any"
+                          value={item.quantity} 
+                          onChange={(e) => handleUpdateItemRow(idx, 'quantity', parseFloat(e.target.value) || 0)} 
+                          className="w-16 bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-xs text-white text-center" 
+                          placeholder="SL"
+                        />
+                        <span className="text-[10px] text-purple-400 font-semibold w-10 truncate text-left" title={equipments.find(e => e.id === item.equipmentId)?.unit || 'cái'}>
+                          {equipments.find(e => e.id === item.equipmentId)?.unit || 'cái'}
+                        </span>
+                      </div>
+
+                      {/* Xóa */}
+                      <button type="button" onClick={() => handleRemoveItemRow(idx)} className="text-red-400 hover:text-red-300 transition-colors px-1 text-sm">🗑️</button>
                     </div>
-                    <button type="button" onClick={() => handleRemoveItemRow(idx)} className="text-red-400 hover:text-red-300 transition-colors px-1 shrink-0 text-sm">🗑️</button>
+
                   </div>
                 ))}
               </div>
@@ -448,6 +634,10 @@ const Estimates = ({ user, onNavigate }) => {
                     existingEstimate.is_locked ? (
                       <button type="button" disabled className="bg-slate-800 text-slate-500 font-medium text-xs px-6 py-3 rounded-xl cursor-not-allowed">
                         🔒 Đã khóa
+                      </button>
+                    ) : isUnchanged ? (
+                      <button type="button" disabled className="bg-slate-850 border border-slate-800 text-slate-500 font-medium text-xs px-6 py-3 rounded-xl cursor-not-allowed" title="Không có thông tin nào thay đổi so với bản trước đó.">
+                        ⚠️ Không đổi (Không thể lưu)
                       </button>
                     ) : (
                       <button type="submit" className="bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white font-medium text-xs px-6 py-3 rounded-xl shadow-lg cursor-pointer transition-all active:scale-[0.98]">
@@ -507,6 +697,7 @@ const Estimates = ({ user, onNavigate }) => {
                       <th className="border border-slate-300 p-0.5 text-center w-4">STT</th>
                       <th className="border border-slate-300 p-0.5">Tên Thiết Bị</th>
                       <th className="border border-slate-300 p-0.5">Thông Số Kỹ Thuật</th>
+                      <th className="border border-slate-300 p-0.5 text-center w-4">ĐVT</th>
                       <th className="border border-slate-300 p-0.5 text-center w-4">SL</th>
                       <th className="border border-slate-300 p-0.5 text-right w-10">Đơn Giá (đ)</th>
                       <th className="border border-slate-300 p-0.5 text-right w-12">Thành Tiền (đ)</th>
@@ -520,6 +711,7 @@ const Estimates = ({ user, onNavigate }) => {
                           <td className="border border-slate-300 p-0.5 text-center">{idx + 1}</td>
                           <td className="border border-slate-300 p-0.5 truncate max-w-[50px] font-medium">{eq.name || '---'}</td>
                           <td className="border border-slate-300 p-0.5 truncate max-w-[50px] text-[4px] text-slate-500">{eq.specifications || '---'}</td>
+                          <td className="border border-slate-300 p-0.5 text-center">{eq.unit || 'cái'}</td>
                           <td className="border border-slate-300 p-0.5 text-center">{item.quantity}</td>
                           <td className="border border-slate-300 p-0.5 text-right whitespace-nowrap">{(item.unitPrice || 0).toLocaleString('vi-VN')}</td>
                           <td className="border border-slate-300 p-0.5 text-right font-bold text-slate-900 whitespace-nowrap">
@@ -529,7 +721,7 @@ const Estimates = ({ user, onNavigate }) => {
                       );
                     })}
                     <tr className="font-bold bg-slate-50 text-slate-900 text-[5px]">
-                      <td colSpan="5" className="border border-slate-300 p-0.5 text-right">Tổng Cộng Dự Toán:</td>
+                      <td colSpan="6" className="border border-slate-300 p-0.5 text-right">Tổng Cộng Dự Toán:</td>
                       <td className="border border-slate-300 p-0.5 text-right text-purple-700 font-bold whitespace-nowrap">
                         {totalCost.toLocaleString('vi-VN')} đ
                       </td>
@@ -616,6 +808,7 @@ const Estimates = ({ user, onNavigate }) => {
                     <th className="border border-slate-400 p-2.5 text-center w-12">STT</th>
                     <th className="border border-slate-400 p-2.5">Tên Thiết Bị</th>
                     <th className="border border-slate-400 p-2.5">Thông Số Kỹ Thuật</th>
+                    <th className="border border-slate-400 p-2.5 text-center w-12">ĐVT</th>
                     <th className="border border-slate-400 p-2.5 text-center w-12">SL</th>
                     <th className="border border-slate-400 p-2.5 text-right w-24">Đơn Giá (đ)</th>
                     <th className="border border-slate-400 p-2.5 text-right w-28">Thành Tiền (đ)</th>
@@ -627,13 +820,14 @@ const Estimates = ({ user, onNavigate }) => {
                       <td className="border border-slate-400 p-2.5 text-center font-sans">{idx + 1}</td>
                       <td className="border border-slate-400 p-2.5 font-sans font-medium">{item.equipmentName}</td>
                       <td className="border border-slate-400 p-2.5 font-sans text-[10px] text-slate-600">{item.equipmentSpecifications}</td>
+                      <td className="border border-slate-400 p-2.5 text-center font-sans">{item.unit || 'cái'}</td>
                       <td className="border border-slate-400 p-2.5 text-center font-sans">{item.quantity}</td>
                       <td className="border border-slate-400 p-2.5 text-right font-sans whitespace-nowrap">{item.unitPrice.toLocaleString('vi-VN')}</td>
                       <td className="border border-slate-400 p-2.5 text-right font-sans font-bold text-slate-900 whitespace-nowrap">{(item.quantity * item.unitPrice).toLocaleString('vi-VN')}</td>
                     </tr>
                   ))}
                   <tr className="font-bold bg-slate-50 text-[12px]">
-                    <td colSpan="5" className="border border-slate-400 p-2.5 text-right">Tổng Cộng Dự Toán:</td>
+                    <td colSpan="6" className="border border-slate-400 p-2.5 text-right">Tổng Cộng Dự Toán:</td>
                     <td className="border border-slate-400 p-2.5 text-right text-purple-700 font-extrabold whitespace-nowrap">{(viewingRecord.totalAmount || 0).toLocaleString('vi-VN')} đ</td>
                   </tr>
                 </tbody>

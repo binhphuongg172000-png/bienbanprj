@@ -178,6 +178,62 @@ const Estimates = ({ user, onNavigate }) => {
 
   const isUnchanged = checkIsUnchanged();
 
+  const getCategorizedItems = (itemsList) => {
+    const eqs = [];
+    const others = [];
+    itemsList.forEach(item => {
+      if (!item.equipmentId) return;
+      const eq = equipments.find(e => e.id === item.equipmentId);
+      const isOther = eq && (eq.category || '').toLowerCase() === 'đầu tư khác';
+      if (isOther) {
+        others.push({
+          ...item,
+          unit: eq ? eq.unit : 'cái',
+          equipmentName: eq ? eq.name : 'Chưa rõ',
+          equipmentSpecifications: eq ? eq.specifications : '',
+        });
+      } else {
+        eqs.push({
+          ...item,
+          unit: eq ? eq.unit : 'cái',
+          equipmentName: eq ? eq.name : 'Chưa rõ',
+          equipmentSpecifications: eq ? eq.specifications : '',
+        });
+      }
+    });
+    return { eqs, others };
+  };
+
+  const { eqs: liveEqs, others: liveOthers } = getCategorizedItems(selectedItems);
+
+  const getCategorizedViewingItems = () => {
+    if (!viewingRecord || !viewingRecord.items) return { eqs: [], others: [] };
+    const eqs = [];
+    const others = [];
+    viewingRecord.items.forEach(item => {
+      const eq = equipments.find(e => e.id === item.equipmentId);
+      const isOther = eq && (eq.category || '').toLowerCase() === 'đầu tư khác';
+      if (isOther) {
+        others.push({
+          ...item,
+          unit: eq ? eq.unit : 'cái',
+          equipmentName: eq ? eq.name : 'Chưa rõ',
+          equipmentSpecifications: eq ? eq.specifications : '',
+        });
+      } else {
+        eqs.push({
+          ...item,
+          unit: eq ? eq.unit : 'cái',
+          equipmentName: eq ? eq.name : 'Chưa rõ',
+          equipmentSpecifications: eq ? eq.specifications : '',
+        });
+      }
+    });
+    return { eqs, others };
+  };
+
+  const { eqs: viewEqs, others: viewOthers } = getCategorizedViewingItems();
+
   const handleSaveEstimate = async (e) => {
     e.preventDefault();
     if (!selectedSchoolObj || selectedItems.length === 0 || selectedItems.some(i => !i.equipmentId)) {
@@ -563,10 +619,13 @@ const Estimates = ({ user, onNavigate }) => {
                                   }}
                                   className="px-4 py-2.5 text-xs hover:bg-slate-900 hover:text-white cursor-pointer transition-colors flex justify-between items-center gap-2 text-slate-300"
                                 >
-                                  <div>
-                                    <span className="font-semibold block">{eq.name}</span>
+                                  <div className="space-y-0.5 pr-2">
+                                    <span className="font-semibold block text-slate-200">{eq.name}</span>
                                     {eq.specifications && (
-                                      <span className="text-[10px] text-slate-500 block truncate max-w-[250px]">{eq.specifications}</span>
+                                      <span className="text-[10px] text-slate-500 block">⚙️ {eq.specifications}</span>
+                                    )}
+                                    {eq.accessories && (
+                                      <span className="text-[10px] text-slate-400 block">🔌 {eq.accessories}</span>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-1.5 shrink-0">
@@ -585,6 +644,17 @@ const Estimates = ({ user, onNavigate }) => {
                           })()}
                         </div>
                       )}
+
+                      {(() => {
+                        const eq = equipments.find(e => e.id === item.equipmentId);
+                        if (!eq) return null;
+                        return (
+                          <div className="text-[10px] text-slate-500 mt-1.5 flex flex-col gap-0.5 pl-1.5 border-l-2 border-purple-500/30">
+                            {eq.specifications && <span>⚙️ <strong>Cấu hình:</strong> {eq.specifications}</span>}
+                            {eq.accessories && <span>🔌 <strong>Linh kiện:</strong> {eq.accessories}</span>}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 justify-between sm:justify-start">
@@ -704,25 +774,65 @@ const Estimates = ({ user, onNavigate }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedItems.map((item, idx) => {
-                      const eq = equipments.find(e => String(e.id) === String(item.equipmentId)) || {};
-                      return (
-                        <tr key={idx} className="text-slate-800">
-                          <td className="border border-slate-300 p-0.5 text-center">{idx + 1}</td>
-                          <td className="border border-slate-300 p-0.5 truncate max-w-[50px] font-medium">{eq.name || '---'}</td>
-                          <td className="border border-slate-300 p-0.5 truncate max-w-[50px] text-[4px] text-slate-500">{eq.specifications || '---'}</td>
-                          <td className="border border-slate-300 p-0.5 text-center">{eq.unit || 'cái'}</td>
-                          <td className="border border-slate-300 p-0.5 text-center">{item.quantity}</td>
-                          <td className="border border-slate-300 p-0.5 text-right whitespace-nowrap">{(item.unitPrice || 0).toLocaleString('vi-VN')}</td>
-                          <td className="border border-slate-300 p-0.5 text-right font-bold text-slate-900 whitespace-nowrap">
-                            {((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('vi-VN')}
+                    {/* Phần I: Thiết bị chuẩn */}
+                    {liveEqs.length > 0 && (
+                      <>
+                        <tr className="bg-purple-950/10 font-bold text-purple-600 text-[5px]">
+                          <td colSpan="7" className="border border-slate-300 p-1">I. PHẦN THIỆT BỊ CHUẨN</td>
+                        </tr>
+                        {liveEqs.map((item, idx) => (
+                          <tr key={`v-eq-${idx}`} className="text-slate-800">
+                            <td className="border border-slate-300 p-0.5 text-center">{idx + 1}</td>
+                            <td className="border border-slate-300 p-0.5 truncate max-w-[50px] font-medium">{item.equipmentName}</td>
+                            <td className="border border-slate-300 p-0.5 truncate max-w-[50px] text-[4px] text-slate-500">{item.equipmentSpecifications || '---'}</td>
+                            <td className="border border-slate-300 p-0.5 text-center">{item.unit || 'cái'}</td>
+                            <td className="border border-slate-300 p-0.5 text-center">{item.quantity}</td>
+                            <td className="border border-slate-300 p-0.5 text-right whitespace-nowrap">{(item.unitPrice || 0).toLocaleString('vi-VN')}</td>
+                            <td className="border border-slate-300 p-0.5 text-right font-bold text-slate-900 whitespace-nowrap">
+                              {((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('vi-VN')}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="font-semibold bg-slate-50 text-slate-700 text-[4.5px] italic">
+                          <td colSpan="6" className="border border-slate-300 p-0.5 text-right">Cộng Phần I (Thiết bị):</td>
+                          <td className="border border-slate-300 p-0.5 text-right font-bold text-slate-950 whitespace-nowrap">
+                            {liveEqs.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0).toLocaleString('vi-VN')} đ
                           </td>
                         </tr>
-                      );
-                    })}
-                    <tr className="font-bold bg-slate-50 text-slate-900 text-[5px]">
-                      <td colSpan="6" className="border border-slate-300 p-0.5 text-right">Tổng Cộng Dự Toán:</td>
-                      <td className="border border-slate-300 p-0.5 text-right text-purple-700 font-bold whitespace-nowrap">
+                      </>
+                    )}
+
+                    {/* Phần II: Đầu tư khác */}
+                    {liveOthers.length > 0 && (
+                      <>
+                        <tr className="bg-amber-950/10 font-bold text-amber-600 text-[5px]">
+                          <td colSpan="7" className="border border-slate-300 p-1">II. PHẦN HẠNG MỤC ĐẦU TƯ KHÁC</td>
+                        </tr>
+                        {liveOthers.map((item, idx) => (
+                          <tr key={`v-oth-${idx}`} className="text-slate-800">
+                            <td className="border border-slate-300 p-0.5 text-center">{idx + 1}</td>
+                            <td className="border border-slate-300 p-0.5 truncate max-w-[50px] font-medium">{item.equipmentName}</td>
+                            <td className="border border-slate-300 p-0.5 truncate max-w-[50px] text-[4px] text-slate-500">{item.equipmentSpecifications || '---'}</td>
+                            <td className="border border-slate-300 p-0.5 text-center">{item.unit || 'cái'}</td>
+                            <td className="border border-slate-300 p-0.5 text-center">{item.quantity}</td>
+                            <td className="border border-slate-300 p-0.5 text-right whitespace-nowrap">{(item.unitPrice || 0).toLocaleString('vi-VN')}</td>
+                            <td className="border border-slate-300 p-0.5 text-right font-bold text-slate-900 whitespace-nowrap">
+                              {((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('vi-VN')}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="font-semibold bg-slate-50 text-slate-700 text-[4.5px] italic">
+                          <td colSpan="6" className="border border-slate-300 p-0.5 text-right">Cộng Phần II (Đầu tư khác):</td>
+                          <td className="border border-slate-300 p-0.5 text-right font-bold text-slate-950 whitespace-nowrap">
+                            {liveOthers.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0).toLocaleString('vi-VN')} đ
+                          </td>
+                        </tr>
+                      </>
+                    )}
+
+                    <tr className="font-bold bg-slate-100 text-slate-900 text-[5px]">
+                      <td colSpan="6" className="border border-slate-300 p-0.5 text-right uppercase">Tổng Cộng Dự Toán:</td>
+                      <td className="border border-slate-300 p-0.5 text-right text-purple-750 font-black whitespace-nowrap">
                         {totalCost.toLocaleString('vi-VN')} đ
                       </td>
                     </tr>
@@ -815,20 +925,61 @@ const Estimates = ({ user, onNavigate }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {viewingRecord.items && viewingRecord.items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="border border-slate-400 p-2.5 text-center font-sans">{idx + 1}</td>
-                      <td className="border border-slate-400 p-2.5 font-sans font-medium">{item.equipmentName}</td>
-                      <td className="border border-slate-400 p-2.5 font-sans text-[10px] text-slate-600">{item.equipmentSpecifications}</td>
-                      <td className="border border-slate-400 p-2.5 text-center font-sans">{item.unit || 'cái'}</td>
-                      <td className="border border-slate-400 p-2.5 text-center font-sans">{item.quantity}</td>
-                      <td className="border border-slate-400 p-2.5 text-right font-sans whitespace-nowrap">{item.unitPrice.toLocaleString('vi-VN')}</td>
-                      <td className="border border-slate-400 p-2.5 text-right font-sans font-bold text-slate-900 whitespace-nowrap">{(item.quantity * item.unitPrice).toLocaleString('vi-VN')}</td>
-                    </tr>
-                  ))}
+                  {/* Phần I: Thiết bị chuẩn */}
+                  {viewEqs.length > 0 && (
+                    <>
+                      <tr className="bg-slate-100 font-bold text-[11px] text-slate-800">
+                        <td colSpan="7" className="border border-slate-400 p-2.5">I. PHẦN THIẾT BỊ CHUẨN</td>
+                      </tr>
+                      {viewEqs.map((item, idx) => (
+                        <tr key={`v-eq-${idx}`}>
+                          <td className="border border-slate-400 p-2.5 text-center font-sans">{idx + 1}</td>
+                          <td className="border border-slate-400 p-2.5 font-sans font-medium">{item.equipmentName}</td>
+                          <td className="border border-slate-400 p-2.5 font-sans text-[10px] text-slate-650">{item.equipmentSpecifications}</td>
+                          <td className="border border-slate-400 p-2.5 text-center font-sans">{item.unit || 'cái'}</td>
+                          <td className="border border-slate-400 p-2.5 text-center font-sans">{item.quantity}</td>
+                          <td className="border border-slate-400 p-2.5 text-right font-sans whitespace-nowrap">{item.unitPrice.toLocaleString('vi-VN')}</td>
+                          <td className="border border-slate-400 p-2.5 text-right font-sans font-bold text-slate-900 whitespace-nowrap">{(item.quantity * item.unitPrice).toLocaleString('vi-VN')}</td>
+                        </tr>
+                      ))}
+                      <tr className="font-semibold bg-slate-50 text-[10.5px] italic text-slate-700">
+                        <td colSpan="6" className="border border-slate-400 p-2.5 text-right">Cộng Phần I (Thiết bị):</td>
+                        <td className="border border-slate-400 p-2.5 text-right font-bold text-slate-900 whitespace-nowrap">
+                          {viewEqs.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0).toLocaleString('vi-VN')} đ
+                        </td>
+                      </tr>
+                    </>
+                  )}
+
+                  {/* Phần II: Hạng mục đầu tư khác */}
+                  {viewOthers.length > 0 && (
+                    <>
+                      <tr className="bg-slate-100 font-bold text-[11px] text-slate-800">
+                        <td colSpan="7" className="border border-slate-400 p-2.5">II. PHẦN HẠNG MỤC ĐẦU TƯ KHÁC</td>
+                      </tr>
+                      {viewOthers.map((item, idx) => (
+                        <tr key={`v-oth-${idx}`}>
+                          <td className="border border-slate-400 p-2.5 text-center font-sans">{idx + 1}</td>
+                          <td className="border border-slate-400 p-2.5 font-sans font-medium">{item.equipmentName}</td>
+                          <td className="border border-slate-400 p-2.5 font-sans text-[10px] text-slate-655">{item.equipmentSpecifications}</td>
+                          <td className="border border-slate-400 p-2.5 text-center font-sans">{item.unit || 'cái'}</td>
+                          <td className="border border-slate-400 p-2.5 text-center font-sans">{item.quantity}</td>
+                          <td className="border border-slate-400 p-2.5 text-right font-sans whitespace-nowrap">{item.unitPrice.toLocaleString('vi-VN')}</td>
+                          <td className="border border-slate-400 p-2.5 text-right font-sans font-bold text-slate-900 whitespace-nowrap">{(item.quantity * item.unitPrice).toLocaleString('vi-VN')}</td>
+                        </tr>
+                      ))}
+                      <tr className="font-semibold bg-slate-50 text-[10.5px] italic text-slate-700">
+                        <td colSpan="6" className="border border-slate-400 p-2.5 text-right">Cộng Phần II (Đầu tư khác):</td>
+                        <td className="border border-slate-400 p-2.5 text-right font-bold text-slate-900 whitespace-nowrap">
+                          {viewOthers.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0).toLocaleString('vi-VN')} đ
+                        </td>
+                      </tr>
+                    </>
+                  )}
+
                   <tr className="font-bold bg-slate-50 text-[12px]">
-                    <td colSpan="6" className="border border-slate-400 p-2.5 text-right">Tổng Cộng Dự Toán:</td>
-                    <td className="border border-slate-400 p-2.5 text-right text-purple-700 font-extrabold whitespace-nowrap">{(viewingRecord.totalAmount || 0).toLocaleString('vi-VN')} đ</td>
+                    <td colSpan="6" className="border border-slate-400 p-2.5 text-right uppercase">Tổng Cộng Dự Toán (Phần I + II):</td>
+                    <td className="border border-slate-400 p-2.5 text-right text-purple-750 font-extrabold whitespace-nowrap">{(viewingRecord.totalAmount || 0).toLocaleString('vi-VN')} đ</td>
                   </tr>
                 </tbody>
               </table>
